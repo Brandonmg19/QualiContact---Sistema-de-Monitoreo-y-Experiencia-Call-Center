@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <clipPath id="appIconClip">
+      <rect x="8" y="8" width="496" height="496" rx="112" ry="112" />
+    </clipPath>
+    <radialGradient id="bgGrad" cx="50%" cy="48%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="72%" stop-color="#f5f8ff" />
+      <stop offset="100%" stop-color="#e3edff" />
+    </radialGradient>
+    <linearGradient id="cornerBlueTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00167a" />
+      <stop offset="65%" stop-color="#0038ba" />
+      <stop offset="100%" stop-color="#0a5ef5" />
+    </linearGradient>
+    <linearGradient id="cornerBlueBot" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#001470" />
+      <stop offset="65%" stop-color="#0036b5" />
+      <stop offset="100%" stop-color="#0a5ef5" />
+    </linearGradient>
+    <linearGradient id="skyWaveTop" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1982ff" />
+      <stop offset="55%" stop-color="#69b8ff" />
+      <stop offset="100%" stop-color="#dceeff" stop-opacity="0.7" />
+    </linearGradient>
+    <linearGradient id="skyWaveBot" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1982ff" />
+      <stop offset="55%" stop-color="#69b8ff" />
+      <stop offset="100%" stop-color="#dceeff" stop-opacity="0.7" />
+    </linearGradient>
+    <linearGradient id="swooshBlue" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#00238a" />
+      <stop offset="50%" stop-color="#0052e0" />
+      <stop offset="100%" stop-color="#0034b8" />
+    </linearGradient>
+    <linearGradient id="letterBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0044e6" />
+      <stop offset="55%" stop-color="#00258f" />
+      <stop offset="100%" stop-color="#001259" />
+    </linearGradient>
+    <linearGradient id="magentaAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef2aa0" />
+      <stop offset="100%" stop-color="#c30d7b" />
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#appIconClip)">
+    <!-- White/Ice Base -->
+    <rect x="8" y="8" width="496" height="496" fill="url(#bgGrad)" />
+
+    <!-- Top-Left Sky Highlight Wave -->
+    <path d="M 8 228 C 68 122, 185 44, 344 8 L 8 8 Z" fill="url(#skyWaveTop)" />
+    <!-- Top-Left Deep Blue Corner -->
+    <path d="M 8 198 C 52 108, 152 38, 294 8 L 8 8 Z" fill="url(#cornerBlueTop)" />
+
+    <!-- Bottom-Right Sky Highlight Wave -->
+    <path d="M 504 284 C 444 390, 327 468, 168 504 L 504 504 Z" fill="url(#skyWaveBot)" />
+    <!-- Bottom-Right Deep Blue Corner -->
+    <path d="M 504 314 C 460 404, 360 474, 218 504 L 504 504 Z" fill="url(#cornerBlueBot)" />
+
+    <!-- Orbital Swoosh Arc -->
+    <path
+      d="M 106 232 C 188 188, 308 166, 378 188 C 414 199, 412 228, 362 252 C 392 226, 392 204, 355 196 C 296 184, 184 202, 106 232 Z"
+      fill="url(#swooshBlue)"
+    />
+    <path
+      d="M 48 272 C 30 296, 52 316, 104 310 C 138 306, 174 295, 198 283 C 166 293, 130 299, 98 300 C 56 301, 44 288, 56 272 Z"
+      fill="url(#swooshBlue)"
+    />
+
+    <!-- Wordmark NEXA -->
+    <g transform="translate(0, 2)">
+      <!-- N -->
+      <path d="M 62 280 V 230 H 79 L 107 262 V 230 H 122 V 280 H 105 L 77 248 V 280 Z" fill="url(#letterBlue)" />
+      <!-- E -->
+      <path d="M 134 280 V 230 H 184 V 241 H 150 V 249 H 178 V 259 H 150 V 269 H 185 V 280 Z" fill="url(#letterBlue)" />
+      <!-- X (Blue base: top-left to bottom-right + bottom-left to center) -->
+      <path d="M 193 230 H 212 L 228 249 L 217 262 L 193 230 Z" fill="url(#letterBlue)" />
+      <path d="M 218 255 L 228 249 L 252 280 H 233 L 218 255 Z" fill="url(#letterBlue)" />
+      <path d="M 192 280 L 216 252 L 226 263 L 211 280 Z" fill="url(#letterBlue)" />
+      <!-- X Upper-Right Magenta Accent Arm -->
+      <path d="M 221 247 L 235 230 H 253 L 232 254 Z" fill="url(#magentaAccent)" />
+      <!-- A -->
+      <path d="M 255 280 L 281 230 H 299 L 325 280 H 306 L 290 247 L 274 280 Z" fill="url(#letterBlue)" />
+      <!-- Inner triangle accent of A -->
+      <polygon points="282,272 298,272 290,280" fill="url(#letterBlue)" />
+
+      <!-- -CX -->
+      <rect x="331" y="253" width="15" height="6" rx="2" fill="#06217a" />
+      <path d="M 398 241 C 393 236, 386 234, 378 234 C 362 234, 353 243, 353 255 C 353 267, 362 276, 378 276 C 386 276, 393 273, 398 268 L 403 274 C 396 280, 388 282, 377 282 C 356 282, 344 270, 344 255 C 344 240, 356 228, 377 228 C 388 228, 396 231, 403 236 Z" fill="#06217a" />
+      <path d="M 407 230 H 418 L 434 250 L 450 230 H 460 L 439 255 L 461 280 H 450 L 433 260 L 417 280 H 406 L 428 255 Z" fill="#06217a" />
+    </g>
+  </g>
+</svg>

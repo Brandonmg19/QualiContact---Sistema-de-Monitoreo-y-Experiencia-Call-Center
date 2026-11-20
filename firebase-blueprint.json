@@ -1,0 +1,639 @@
+{
+  "entities": {
+    "AdminMarker": {
+      "title": "AdminMarker",
+      "description": "Trusted marker document granting Firestore Admin privileges to a verified Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the administrator"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200,
+          "description": "Verified administrator email"
+        },
+        "grantedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "UID of granting administrator"
+        },
+        "serverCreatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin access was granted"
+        }
+      },
+      "required": ["uid", "email", "serverCreatedAt"]
+    },
+    "UserPII": {
+      "title": "UserPII",
+      "description": "Private user account record containing PII (email, phone) and role/hierarchy assignment.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "voiceName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "employeeCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "role": {
+          "type": "string",
+          "enum": ["asesor", "team_leader", "coordinador", "analista", "admin"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive"]
+        },
+        "reportsToId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "department": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "authUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "serverCreatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "employeeCode",
+        "role",
+        "status",
+        "department",
+        "serverCreatedAt",
+        "serverUpdatedAt"
+      ]
+    },
+    "DirectoryEntry": {
+      "title": "DirectoryEntry",
+      "description": "Non-PII organizational roster entry for dropdowns, hierarchy trees, and agent/TL matching.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "voiceName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "employeeCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "role": {
+          "type": "string",
+          "enum": ["asesor", "team_leader", "coordinador", "analista", "admin"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive"]
+        },
+        "reportsToId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "department": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "authUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "employeeCode",
+        "role",
+        "status",
+        "department",
+        "serverUpdatedAt"
+      ]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Nested Category -> Motivo -> Causa Raiz catalog entry.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "motivos": {
+          "type": "array"
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "name", "motivos", "serverUpdatedAt"]
+    },
+    "ContactReason": {
+      "title": "ContactReason",
+      "description": "Managed Contact Reason catalog item.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "name", "active", "createdAt", "serverUpdatedAt"]
+    },
+    "Survey": {
+      "title": "Survey",
+      "description": "Imported daily voice or chat NPS survey interaction.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ticketNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "customerIdentifier": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["Voz", "Chat"]
+        },
+        "surveyDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "npsScore": {
+          "type": "number"
+        },
+        "npsType": {
+          "type": "string",
+          "enum": ["Detractor", "Pasivo", "Promotor"]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "hasGeneratedPending": {
+          "type": "boolean"
+        },
+        "serverCreatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ticketNumber",
+        "customerIdentifier",
+        "channel",
+        "surveyDate",
+        "npsScore",
+        "npsType",
+        "createdAt",
+        "hasGeneratedPending",
+        "serverCreatedAt"
+      ]
+    },
+    "PendingAnalysis": {
+      "title": "PendingAnalysis",
+      "description": "Analyst queue item generated from detractors, random sampling, or refutations.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ticketNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "customerIdentifier": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["Voz", "Chat", "WhatsApp", "Correo"]
+        },
+        "interactionDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "ENCUESTA_DETRACTORA_VOZ",
+            "ENCUESTA_DETRACTORA_CHAT",
+            "MUESTREO_ALEATORIO",
+            "ESCALAMIENTO",
+            "REFUTACION"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDIENTE", "EN_ANALISIS", "ANALIZADO"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Alta", "Media", "Baja"]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "serverCreatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ticketNumber",
+        "customerIdentifier",
+        "channel",
+        "interactionDate",
+        "origin",
+        "status",
+        "priority",
+        "createdAt",
+        "serverCreatedAt",
+        "serverUpdatedAt"
+      ]
+    },
+    "Monitoring": {
+      "title": "Monitoring",
+      "description": "Experience monitoring record covering analyst findings, TL feedback, agent commitment, and refutations.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ticketNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "customerIdentifier": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["Voz", "Chat", "WhatsApp", "Correo"]
+        },
+        "callDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "callDurationSec": {
+          "type": "number"
+        },
+        "score": {
+          "type": "number"
+        },
+        "agentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "agentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "teamLeaderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "teamLeaderName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "analystId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "analystName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "areaImputable": {
+          "type": "string",
+          "enum": ["Asesor", "Negocio", "Cliente"]
+        },
+        "requiresFeedback": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDIENTE_TL",
+            "PENDIENTE_AGENTE",
+            "CERRADO",
+            "CONFORME_SIN_FEEDBACK",
+            "REFUTADO"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "serverCreatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ticketNumber",
+        "customerIdentifier",
+        "channel",
+        "callDate",
+        "callDurationSec",
+        "score",
+        "agentId",
+        "agentName",
+        "teamLeaderId",
+        "teamLeaderName",
+        "analystId",
+        "analystName",
+        "category1",
+        "hasSecondCategory",
+        "areaImputable",
+        "requiresFeedback",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "serverCreatedAt",
+        "serverUpdatedAt"
+      ]
+    },
+    "RolePermission": {
+      "title": "RolePermission",
+      "description": "Configurable permission profile for system roles.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "roleKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "isSystem": {
+          "type": "boolean"
+        },
+        "permissions": {
+          "type": "object"
+        },
+        "serverUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "roleKey", "name", "description", "isSystem", "permissions", "serverUpdatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable system audit log event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "userRole": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "module": {
+          "type": "string",
+          "enum": ["General", "Analista", "Reportería", "Administrador", "Autenticación"]
+        },
+        "details": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "serverCreatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "userId",
+        "userName",
+        "userRole",
+        "action",
+        "module",
+        "details",
+        "authorUid",
+        "serverCreatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminMarker" },
+      "description": "Trusted UID markers for Admins"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPII" },
+      "description": "User profiles with PII (email, phone) and RBAC role assignments"
+    },
+    "/directory/{userId}": {
+      "schema": { "$ref": "#/entities/DirectoryEntry" },
+      "description": "Non-PII employee directory for hierarchy and selector dropdowns"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Nested Category -> Motivo -> Causa Raiz catalog"
+    },
+    "/contact_reasons/{reasonId}": {
+      "schema": { "$ref": "#/entities/ContactReason" },
+      "description": "Managed Contact Reasons catalog"
+    },
+    "/surveys/{surveyId}": {
+      "schema": { "$ref": "#/entities/Survey" },
+      "description": "Daily imported Voz/Chat NPS surveys"
+    },
+    "/pending_analyses/{pendingId}": {
+      "schema": { "$ref": "#/entities/PendingAnalysis" },
+      "description": "Analyst queue of pending reviews (detractors, sampling, refutations)"
+    },
+    "/monitorings/{monitoringId}": {
+      "schema": { "$ref": "#/entities/Monitoring" },
+      "description": "Monitoring records and closed-loop feedback lifecycle"
+    },
+    "/roles/{roleId}": {
+      "schema": { "$ref": "#/entities/RolePermission" },
+      "description": "Role permission definitions"
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable system audit log entries"
+    }
+  }
+}

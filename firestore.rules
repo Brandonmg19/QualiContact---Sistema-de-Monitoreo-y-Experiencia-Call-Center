@@ -1,0 +1,519 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function authEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBootstrappedAdmin() {
+      return isEmailVerified() && authEmail() == 'luis.montenegro@xtendo-it.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isEmailVerified() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isStaff() {
+      return isAdmin() || (
+        isEmailVerified() &&
+        exists(/databases/$(database)/documents/staff_claims/$(request.auth.uid))
+      );
+    }
+
+    function staffRole() {
+      return get(/databases/$(database)/documents/staff_claims/$(request.auth.uid)).data.role;
+    }
+
+    function staffUserId() {
+      return get(/databases/$(database)/documents/staff_claims/$(request.auth.uid)).data.userId;
+    }
+
+    function isAnalystOrCoordinator() {
+      return isAdmin() || (
+        isStaff() && (staffRole() == 'analista' || staffRole() == 'coordinador')
+      );
+    }
+
+    function isTeamLeaderRole() {
+      return isAdmin() || (isStaff() && staffRole() == 'team_leader');
+    }
+
+    function isValidRole(role) {
+      return role in ['asesor', 'team_leader', 'coordinador', 'analista', 'admin'];
+    }
+
+    function isValidChannel(channel) {
+      return channel in ['Voz', 'Chat', 'WhatsApp', 'Correo'];
+    }
+
+    function isValidArea(area) {
+      return area in ['Asesor', 'Negocio', 'Cliente'];
+    }
+
+    function isValidMonitoringStatus(status) {
+      return status in ['PENDIENTE_TL', 'PENDIENTE_AGENTE', 'CERRADO', 'CONFORME_SIN_FEEDBACK', 'REFUTADO'];
+    }
+
+    // Entity Validators
+    function isValidAdminMarker(data) {
+      return data.keys().hasAll(['uid', 'email', 'serverCreatedAt']) &&
+        data.keys().hasOnly(['uid', 'userId', 'email', 'grantedBy', 'serverCreatedAt']) &&
+        isValidId(data.uid) &&
+        (!('userId' in data) || isValidId(data.userId)) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        (!('grantedBy' in data) || (data.grantedBy is string && data.grantedBy.size() <= 128)) &&
+        data.serverCreatedAt is timestamp;
+    }
+
+    function isValidStaffClaim(data) {
+      return data.keys().hasAll(['uid', 'userId', 'email', 'role', 'status', 'serverUpdatedAt']) &&
+        data.keys().hasOnly(['uid', 'userId', 'email', 'role', 'status', 'serverUpdatedAt']) &&
+        isValidId(data.uid) &&
+        isValidId(data.userId) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        isValidRole(data.role) &&
+        data.status in ['active', 'inactive'] &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidUserPII(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'employeeCode', 'role', 'status', 'department', 'serverCreatedAt', 'serverUpdatedAt']) &&
+        data.keys().hasOnly(['id', 'name', 'voiceName', 'email', 'employeeCode', 'role', 'status', 'reportsToId', 'department', 'avatar', 'phone', 'authUid', 'serverCreatedAt', 'serverUpdatedAt']) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 150 &&
+        (!('voiceName' in data) || (data.voiceName is string && data.voiceName.size() <= 150)) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.employeeCode is string && data.employeeCode.size() >= 1 && data.employeeCode.size() <= 64 &&
+        isValidRole(data.role) &&
+        data.status in ['active', 'inactive'] &&
+        (!('reportsToId' in data) || (data.reportsToId is string && data.reportsToId.size() <= 128)) &&
+        data.department is string && data.department.size() <= 150 &&
+        (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 500)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 40)) &&
+        (!('authUid' in data) || (data.authUid is string && data.authUid.size() <= 128)) &&
+        data.serverCreatedAt is timestamp &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidDirectoryEntry(data) {
+      return data.keys().hasAll(['id', 'name', 'employeeCode', 'role', 'status', 'department', 'serverUpdatedAt']) &&
+        data.keys().hasOnly(['id', 'name', 'voiceName', 'employeeCode', 'role', 'status', 'reportsToId', 'department', 'authUid', 'serverUpdatedAt']) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 150 &&
+        (!('voiceName' in data) || (data.voiceName is string && data.voiceName.size() <= 150)) &&
+        data.employeeCode is string && data.employeeCode.size() >= 1 && data.employeeCode.size() <= 64 &&
+        isValidRole(data.role) &&
+        data.status in ['active', 'inactive'] &&
+        (!('reportsToId' in data) || (data.reportsToId is string && data.reportsToId.size() <= 128)) &&
+        data.department is string && data.department.size() <= 150 &&
+        (!('authUid' in data) || (data.authUid is string && data.authUid.size() <= 128)) &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['id', 'name', 'motivos', 'serverUpdatedAt']) &&
+        data.keys().hasOnly(['id', 'name', 'code', 'motivos', 'serverUpdatedAt']) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 200 &&
+        (!('code' in data) || (data.code is string && data.code.size() <= 32)) &&
+        data.motivos is list && data.motivos.size() <= 300 &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidContactReason(data) {
+      return data.keys().hasAll(['id', 'name', 'active', 'createdAt', 'serverUpdatedAt']) &&
+        data.keys().hasOnly(['id', 'name', 'description', 'active', 'createdAt', 'serverUpdatedAt']) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 200 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+        data.active is bool &&
+        data.createdAt is string && data.createdAt.size() <= 32 &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidSurvey(data) {
+      return data.keys().hasAll(['id', 'ticketNumber', 'customerIdentifier', 'channel', 'surveyDate', 'npsScore', 'npsType', 'createdAt', 'hasGeneratedPending', 'serverCreatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'ticketNumber', 'chatId', 'customerIdentifier', 'channel', 'inboxName',
+          'segment', 'clasificacionEmpresas', 'surveyDate', 'surveyTime', 'npsScore',
+          'npsType', 'agentId', 'agentName', 'asesorPersonalizado', 'customerComment',
+          'phoneOrLine', 'csat', 'fcr', 'effort', 'callDurationSec', 'batchId',
+          'createdAt', 'hasGeneratedPending', 'serverCreatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.ticketNumber is string && data.ticketNumber.size() >= 1 && data.ticketNumber.size() <= 120 &&
+        data.customerIdentifier is string && data.customerIdentifier.size() >= 1 && data.customerIdentifier.size() <= 120 &&
+        data.channel in ['Voz', 'Chat'] &&
+        data.surveyDate is string && data.surveyDate.size() <= 32 &&
+        data.npsScore is number && data.npsScore >= 0 && data.npsScore <= 10 &&
+        data.npsType in ['Detractor', 'Pasivo', 'Promotor'] &&
+        data.createdAt is string && data.createdAt.size() <= 32 &&
+        data.hasGeneratedPending is bool &&
+        (!('customerComment' in data) || (data.customerComment is string && data.customerComment.size() <= 4000)) &&
+        data.serverCreatedAt is timestamp;
+    }
+
+    function isValidPendingAnalysis(data) {
+      return data.keys().hasAll(['id', 'ticketNumber', 'customerIdentifier', 'channel', 'interactionDate', 'origin', 'status', 'priority', 'createdAt', 'serverCreatedAt', 'serverUpdatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'ticketNumber', 'chatId', 'customerIdentifier', 'channel', 'inboxName',
+          'segment', 'clasificacionEmpresas', 'interactionDate', 'interactionTime',
+          'durationSec', 'origin', 'npsScore', 'npsType', 'customerComment',
+          'csat', 'fcr', 'effort', 'agentId', 'agentName', 'asesorPersonalizado',
+          'assignedAnalystId', 'assignedAnalystName', 'status', 'priority',
+          'audioRecordingId', 'completedMonitoringId', 'originalMonitoringId',
+          'refutation', 'createdAt', 'serverCreatedAt', 'serverUpdatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.ticketNumber is string && data.ticketNumber.size() >= 1 && data.ticketNumber.size() <= 120 &&
+        data.customerIdentifier is string && data.customerIdentifier.size() >= 1 && data.customerIdentifier.size() <= 120 &&
+        isValidChannel(data.channel) &&
+        data.interactionDate is string && data.interactionDate.size() <= 32 &&
+        data.origin in ['ENCUESTA_DETRACTORA_VOZ', 'ENCUESTA_DETRACTORA_CHAT', 'MUESTREO_ALEATORIO', 'ESCALAMIENTO', 'REFUTACION'] &&
+        data.status in ['PENDIENTE', 'EN_ANALISIS', 'ANALIZADO'] &&
+        data.priority in ['Alta', 'Media', 'Baja'] &&
+        data.createdAt is string && data.createdAt.size() <= 32 &&
+        (!('customerComment' in data) || (data.customerComment is string && data.customerComment.size() <= 4000)) &&
+        data.serverCreatedAt is timestamp &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidMonitoring(data) {
+      return data.keys().hasAll([
+          'id', 'ticketNumber', 'customerIdentifier', 'channel', 'callDate',
+          'callDurationSec', 'score', 'agentId', 'agentName', 'teamLeaderId',
+          'teamLeaderName', 'analystId', 'analystName', 'category1',
+          'hasSecondCategory', 'areaImputable', 'requiresFeedback', 'status',
+          'createdAt', 'updatedAt', 'serverCreatedAt', 'serverUpdatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'ticketNumber', 'customerIdentifier', 'channel', 'callDate', 'callTime',
+          'callDurationSec', 'audioRecordingId', 'score', 'scoreItems', 'surveyScore',
+          'contactReason', 'chatId', 'inboxName', 'segment', 'clasificacionEmpresas',
+          'csat', 'fcr', 'effort', 'asesorPersonalizado', 'agentId', 'agentName',
+          'agentEmail', 'teamLeaderId', 'teamLeaderName', 'teamLeaderEmail',
+          'analystId', 'analystName', 'analystEmail', 'category1', 'hasSecondCategory',
+          'category2', 'areaImputable', 'requiresFeedback', 'status', 'qaFindings',
+          'tlFeedback', 'agentCommitment', 'refutations', 'latestRefutation',
+          'createdAt', 'updatedAt', 'serverCreatedAt', 'serverUpdatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.ticketNumber is string && data.ticketNumber.size() >= 1 && data.ticketNumber.size() <= 120 &&
+        data.customerIdentifier is string && data.customerIdentifier.size() >= 1 && data.customerIdentifier.size() <= 120 &&
+        isValidChannel(data.channel) &&
+        data.callDate is string && data.callDate.size() <= 32 &&
+        data.callDurationSec is number && data.callDurationSec >= 0 &&
+        data.score is number && data.score >= 0 && data.score <= 100 &&
+        isValidId(data.agentId) &&
+        data.agentName is string && data.agentName.size() >= 1 && data.agentName.size() <= 150 &&
+        isValidId(data.teamLeaderId) &&
+        data.teamLeaderName is string && data.teamLeaderName.size() >= 1 && data.teamLeaderName.size() <= 150 &&
+        isValidId(data.analystId) &&
+        data.analystName is string && data.analystName.size() >= 1 && data.analystName.size() <= 150 &&
+        data.category1 is map &&
+        data.hasSecondCategory is bool &&
+        isValidArea(data.areaImputable) &&
+        data.requiresFeedback is bool &&
+        isValidMonitoringStatus(data.status) &&
+        (!('refutations' in data) || (data.refutations is list && data.refutations.size() <= 30)) &&
+        data.createdAt is string && data.createdAt.size() <= 32 &&
+        data.updatedAt is string && data.updatedAt.size() <= 32 &&
+        data.serverCreatedAt is timestamp &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidRolePermission(data) {
+      return data.keys().hasAll(['id', 'roleKey', 'name', 'description', 'isSystem', 'permissions', 'serverUpdatedAt']) &&
+        data.keys().hasOnly(['id', 'roleKey', 'name', 'description', 'isSystem', 'permissions', 'serverUpdatedAt']) &&
+        isValidId(data.id) &&
+        data.roleKey is string && data.roleKey.size() >= 1 && data.roleKey.size() <= 64 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.description is string && data.description.size() <= 500 &&
+        data.isSystem is bool &&
+        data.permissions is map &&
+        data.serverUpdatedAt is timestamp;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['id', 'timestamp', 'userId', 'userName', 'userRole', 'action', 'module', 'details', 'authorUid', 'serverCreatedAt']) &&
+        data.keys().hasOnly(['id', 'timestamp', 'userId', 'userName', 'userRole', 'action', 'module', 'details', 'targetId', 'authorUid', 'serverCreatedAt']) &&
+        isValidId(data.id) &&
+        data.timestamp is string && data.timestamp.size() <= 32 &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 150 &&
+        data.userRole is string && data.userRole.size() <= 64 &&
+        data.action is string && data.action.size() >= 1 && data.action.size() <= 150 &&
+        data.module in ['General', 'Analista', 'Reportería', 'Administrador', 'Autenticación'] &&
+        data.details is string && data.details.size() <= 2000 &&
+        (!('targetId' in data) || (data.targetId is string && data.targetId.size() <= 128)) &&
+        data.authorUid == request.auth.uid &&
+        data.serverCreatedAt is timestamp;
+    }
+
+    // 3. Collection Match Blocks
+
+    // Connection test helper document (read-only ping)
+    match /test/connection {
+      allow get: if isSignedIn();
+    }
+
+    // Admin UID markers
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && isEmailVerified() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(uid) && isEmailVerified() && isValidAdminMarker(incoming()) && incoming().serverCreatedAt == request.time && (
+        isAdmin() ||
+        (
+          request.auth.uid == uid &&
+          incoming().uid == request.auth.uid &&
+          incoming().email == authEmail() &&
+          'userId' in incoming() &&
+          exists(/databases/$(database)/documents/users/$(incoming().userId)) &&
+          get(/databases/$(database)/documents/users/$(incoming().userId)).data.email == authEmail() &&
+          get(/databases/$(database)/documents/users/$(incoming().userId)).data.role == 'admin' &&
+          get(/databases/$(database)/documents/users/$(incoming().userId)).data.status == 'active'
+        )
+      );
+      allow update: if false;
+      allow delete: if isValidId(uid) && isAdmin();
+    }
+
+    // Staff role claims (verified mapping uid -> role/email, bound strictly to trusted users doc)
+    match /staff_claims/{uid} {
+      allow get: if isValidId(uid) && isEmailVerified() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(uid) && isEmailVerified() && isValidStaffClaim(incoming()) && incoming().serverUpdatedAt == request.time && (
+        isAdmin() ||
+        (
+          request.auth.uid == uid &&
+          incoming().uid == request.auth.uid &&
+          incoming().email == authEmail() &&
+          exists(/databases/$(database)/documents/users/$(incoming().userId)) &&
+          get(/databases/$(database)/documents/users/$(incoming().userId)).data.email == authEmail() &&
+          get(/databases/$(database)/documents/users/$(incoming().userId)).data.role == incoming().role &&
+          get(/databases/$(database)/documents/users/$(incoming().userId)).data.status == incoming().status
+        )
+      );
+      allow update: if isValidId(uid) && isAdmin() && isValidStaffClaim(incoming()) && incoming().serverUpdatedAt == request.time;
+      allow delete: if isValidId(uid) && isAdmin();
+    }
+
+    // Users collection (Contains PII: email, phone) -> Strictly Admin or Owner
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isEmailVerified() && (
+        isAdmin() ||
+        existing().email == authEmail() ||
+        existing().authUid == request.auth.uid
+      );
+      allow list: if isEmailVerified() && (
+        isAdmin() ||
+        resource.data.email == authEmail() ||
+        resource.data.authUid == request.auth.uid
+      );
+      allow create: if isValidId(userId) && isAdmin() && isValidUserPII(incoming()) &&
+        incoming().serverCreatedAt == request.time &&
+        incoming().serverUpdatedAt == request.time;
+      allow update: if isValidId(userId) && isEmailVerified() && isValidUserPII(incoming()) &&
+        incoming().serverCreatedAt == existing().serverCreatedAt &&
+        incoming().serverUpdatedAt == request.time && (
+          isAdmin() ||
+          (
+            existing().email == authEmail() &&
+            incoming().authUid == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['authUid', 'serverUpdatedAt'])
+          )
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Directory collection (Non-PII organizational roster for dropdowns & hierarchy)
+    match /directory/{userId} {
+      allow get: if isValidId(userId) && isStaff();
+      allow list: if isStaff();
+      allow create, update: if isValidId(userId) && isAdmin() && isValidDirectoryEntry(incoming()) &&
+        incoming().serverUpdatedAt == request.time;
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Categories catalog
+    match /categories/{categoryId} {
+      allow get: if isValidId(categoryId) && isStaff();
+      allow list: if isStaff();
+      allow create, update: if isValidId(categoryId) && isAnalystOrCoordinator() &&
+        isValidCategory(incoming()) && incoming().serverUpdatedAt == request.time;
+      allow delete: if isValidId(categoryId) && isAnalystOrCoordinator();
+    }
+
+    // Contact Reasons catalog
+    match /contact_reasons/{reasonId} {
+      allow get: if isValidId(reasonId) && isStaff();
+      allow list: if isStaff();
+      allow create, update: if isValidId(reasonId) && isAnalystOrCoordinator() &&
+        isValidContactReason(incoming()) && incoming().serverUpdatedAt == request.time;
+      allow delete: if isValidId(reasonId) && isAnalystOrCoordinator();
+    }
+
+    // Surveys (Voz & Chat NPS) -> Restricted to Analysts, Coordinators, and Admins
+    match /surveys/{surveyId} {
+      allow get: if isValidId(surveyId) && isAnalystOrCoordinator();
+      allow list: if isAnalystOrCoordinator();
+      allow create: if isValidId(surveyId) && isAnalystOrCoordinator() &&
+        isValidSurvey(incoming()) && incoming().serverCreatedAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(surveyId) && isAnalystOrCoordinator();
+    }
+
+    // Pending Analyses (Analyst inbox) -> Analysts/Coordinators/Admins; TLs/Advisors can create refutations
+    match /pending_analyses/{pendingId} {
+      allow get: if isValidId(pendingId) && isAnalystOrCoordinator();
+      allow list: if isAnalystOrCoordinator();
+      allow create: if isValidId(pendingId) && isStaff() &&
+        isValidPendingAnalysis(incoming()) &&
+        incoming().serverCreatedAt == request.time &&
+        incoming().serverUpdatedAt == request.time && (
+          isAnalystOrCoordinator() ||
+          incoming().origin == 'REFUTACION'
+        );
+      allow update: if isValidId(pendingId) && isAnalystOrCoordinator() &&
+        isValidPendingAnalysis(incoming()) &&
+        incoming().serverCreatedAt == existing().serverCreatedAt &&
+        incoming().serverUpdatedAt == request.time;
+      allow delete: if isValidId(pendingId) && isAnalystOrCoordinator();
+    }
+
+    // Monitorings (Closed-loop Experience & Feedback)
+    match /monitorings/{monitoringId} {
+      allow get: if isValidId(monitoringId) && isEmailVerified() && (
+        isAnalystOrCoordinator() ||
+        existing().agentEmail == authEmail() ||
+        existing().teamLeaderEmail == authEmail() ||
+        existing().analystEmail == authEmail() ||
+        (isStaff() && (
+          existing().agentId == staffUserId() ||
+          existing().teamLeaderId == staffUserId() ||
+          existing().analystId == staffUserId()
+        ))
+      );
+      allow list: if isEmailVerified() && (
+        isAnalystOrCoordinator() ||
+        resource.data.agentEmail == authEmail() ||
+        resource.data.teamLeaderEmail == authEmail() ||
+        resource.data.analystEmail == authEmail() ||
+        (isStaff() && (
+          resource.data.agentId == staffUserId() ||
+          resource.data.teamLeaderId == staffUserId() ||
+          resource.data.analystId == staffUserId()
+        ))
+      );
+      allow create: if isValidId(monitoringId) && isAnalystOrCoordinator() &&
+        isValidMonitoring(incoming()) &&
+        incoming().serverCreatedAt == request.time &&
+        incoming().serverUpdatedAt == request.time;
+      allow update: if isValidId(monitoringId) && isEmailVerified() &&
+        isValidMonitoring(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().serverCreatedAt == existing().serverCreatedAt &&
+        incoming().serverUpdatedAt == request.time && (
+          isAdmin() ||
+          // Action 1: TL submits feedback
+          (
+            existing().status == 'PENDIENTE_TL' &&
+            (existing().teamLeaderEmail == authEmail() || isTeamLeaderRole() || (isStaff() && existing().teamLeaderId == staffUserId())) &&
+            incoming().status == 'PENDIENTE_AGENTE' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'tlFeedback', 'updatedAt', 'serverUpdatedAt'])
+          ) ||
+          // Action 2: Agent signs commitment
+          (
+            existing().status == 'PENDIENTE_AGENTE' &&
+            (existing().agentEmail == authEmail() || (isStaff() && existing().agentId == staffUserId())) &&
+            incoming().status == 'CERRADO' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'agentCommitment', 'updatedAt', 'serverUpdatedAt'])
+          ) ||
+          // Action 3: TL or Agent refutes monitoring back to Analyst
+          (
+            existing().status in ['PENDIENTE_TL', 'PENDIENTE_AGENTE'] &&
+            (
+              existing().teamLeaderEmail == authEmail() ||
+              existing().agentEmail == authEmail() ||
+              isTeamLeaderRole() ||
+              (isStaff() && (existing().teamLeaderId == staffUserId() || existing().agentId == staffUserId()))
+            ) &&
+            incoming().status == 'REFUTADO' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'refutations', 'latestRefutation', 'updatedAt', 'serverUpdatedAt'])
+          ) ||
+          // Action 4: Analyst resolves refuted monitoring
+          (
+            existing().status == 'REFUTADO' &&
+            isAnalystOrCoordinator() &&
+            incoming().status in ['PENDIENTE_TL', 'CONFORME_SIN_FEEDBACK'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'ticketNumber', 'customerIdentifier', 'channel', 'callDate', 'callTime',
+              'callDurationSec', 'audioRecordingId', 'score', 'surveyScore',
+              'contactReason', 'chatId', 'inboxName', 'segment', 'clasificacionEmpresas',
+              'csat', 'fcr', 'effort', 'asesorPersonalizado', 'agentId', 'agentName',
+              'agentEmail', 'teamLeaderId', 'teamLeaderName', 'teamLeaderEmail',
+              'analystId', 'analystName', 'analystEmail', 'category1', 'hasSecondCategory',
+              'category2', 'areaImputable', 'requiresFeedback', 'qaFindings', 'status',
+              'tlFeedback', 'agentCommitment', 'updatedAt', 'serverUpdatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(monitoringId) && isAdmin();
+    }
+
+    // Roles & Permissions
+    match /roles/{roleId} {
+      allow get: if isValidId(roleId) && isStaff();
+      allow list: if isStaff();
+      allow create, update: if isValidId(roleId) && isAdmin() &&
+        isValidRolePermission(incoming()) && incoming().serverUpdatedAt == request.time;
+      allow delete: if isValidId(roleId) && isAdmin() && existing().isSystem == false;
+    }
+
+    // Immutable Audit Logs
+    match /audit_logs/{logId} {
+      allow get: if isValidId(logId) && isEmailVerified() && (
+        isAnalystOrCoordinator() ||
+        existing().authorUid == request.auth.uid
+      );
+      allow list: if isEmailVerified() && (
+        isAnalystOrCoordinator() ||
+        resource.data.authorUid == request.auth.uid
+      );
+      allow create: if isValidId(logId) && isEmailVerified() &&
+        isValidAuditLog(incoming()) && incoming().serverCreatedAt == request.time;
+      allow update, delete: if false;
+    }
+  }
+}
